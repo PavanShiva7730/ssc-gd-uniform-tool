@@ -1,4 +1,4 @@
-const WORKER_URL = "https://ssc-gd-worker.medeti-prasad.workers.dev/";
+const WORKER_URL = "https://ssc-gd.medeti-prasad.workers.dev/";
 
 const MODEL_VERSION =
   "2b017d7c5c4b4e8f9e8a7d15a9c1b5c0a3b5f5c9e5f2c3b7c8d6e9f1";
