@@ -1,53 +1,54 @@
-// ✅ Your Cloudflare Worker URL
 const WORKER_URL = "https://ssc-gd-worker.medeti-prasad.workers.dev/";
 
-// ✅ Official SDXL model version from Replicate
 const MODEL_VERSION =
   "2b017d7c5c4b4e8f9e8a7d15a9c1b5c0a3b5f5c9e5f2c3b7c8d6e9f1";
 
-const generateBtn = document.getElementById("generateBtn");
-const imageInput = document.getElementById("imageInput");
+const btn = document.getElementById("generateBtn");
+const input = document.getElementById("imageInput");
 const loading = document.getElementById("loading");
-const outputImage = document.getElementById("outputImage");
-const downloadBtn = document.getElementById("downloadBtn");
+const img = document.getElementById("outputImage");
+const download = document.getElementById("downloadBtn");
 
-generateBtn.onclick = async () => {
-  if (!imageInput.files.length) {
-    alert("Please upload a photo first");
+btn.onclick = async () => {
+  if (!input.files.length) {
+    alert("Upload image first");
     return;
   }
 
   loading.classList.remove("hidden");
-  outputImage.classList.add("hidden");
-  downloadBtn.classList.add("hidden");
+  img.classList.add("hidden");
+  download.classList.add("hidden");
 
-  const base64Image = await toBase64(imageInput.files[0]);
+  const base64 = await toBase64(input.files[0]);
 
-  // 1️⃣ Create prediction via Worker
+  // 1️⃣ Create prediction
   const createRes = await fetch(WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       version: MODEL_VERSION,
       input: {
-        image: base64Image,
+        image: base64,
         prompt:
           "Indian male wearing khaki SSC GD Constable uniform, photorealistic, studio lighting, official portrait",
         negative_prompt:
-          "cartoon, anime, fake uniform, distorted face, blur"
+          "cartoon, anime, distorted face, blur, fake uniform"
       }
     })
   });
 
   const prediction = await createRes.json();
 
-  // 2️⃣ Poll prediction status
+  // 2️⃣ Poll via Worker (IMPORTANT FIX)
   let imageUrl = null;
 
   while (true) {
     await new Promise(r => setTimeout(r, 4000));
 
-    const pollRes = await fetch(prediction.urls.get);
+    const pollRes = await fetch(
+      `${WORKER_URL}?poll=${encodeURIComponent(prediction.urls.get)}`
+    );
+
     const pollData = await pollRes.json();
 
     if (pollData.status === "succeeded") {
@@ -63,22 +64,21 @@ generateBtn.onclick = async () => {
   loading.classList.add("hidden");
 
   if (!imageUrl) {
-    alert("Image generation failed. Try again.");
+    alert("Image generation failed");
     return;
   }
 
-  outputImage.src = imageUrl;
-  outputImage.classList.remove("hidden");
-  downloadBtn.href = imageUrl;
-  downloadBtn.classList.remove("hidden");
+  img.src = imageUrl;
+  img.classList.remove("hidden");
+  download.href = imageUrl;
+  download.classList.remove("hidden");
 };
 
-// Helper: convert image to base64
 function toBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
   });
 }
