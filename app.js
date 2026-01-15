@@ -4,12 +4,11 @@ const resultImage = document.getElementById("resultImage");
 const loader = document.getElementById("loader");
 const downloadBtn = document.getElementById("downloadBtn");
 
-// ✅ Your Cloudflare Worker URL
 const WORKER_URL = "https://ssc-gd.medeti-prasad.workers.dev";
 
 generateBtn.addEventListener("click", async () => {
   if (!fileInput.files.length) {
-    alert("Please upload a photo first");
+    alert("Upload a photo first");
     return;
   }
 
@@ -17,49 +16,41 @@ generateBtn.addEventListener("click", async () => {
   resultImage.classList.add("hidden");
   downloadBtn.classList.add("hidden");
 
-  const file = fileInput.files[0];
-
   const reader = new FileReader();
 
   reader.onload = async () => {
-    try {
-      const base64Image = reader.result;
+    const createRes = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image: reader.result,
+        prompt:
+          "Ultra realistic Indian SSC GD Constable wearing khaki uniform, professional portrait, realistic face, high detail"
+      })
+    });
 
-      const response = await fetch(WORKER_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          image: base64Image,
-          prompt:
-            "Ultra realistic portrait photo of an Indian SSC GD Constable wearing official khaki uniform, realistic lighting, sharp focus, professional photography, high detail face, cinematic background"
-        })
-      });
+    const prediction = await createRes.json();
 
-      const data = await response.json();
+    const poll = async () => {
+      const pollRes = await fetch(`${WORKER_URL}?id=${prediction.id}`);
+      const data = await pollRes.json();
 
-      loader.classList.add("hidden");
-
-      // ✅ FINAL FIX (IMPORTANT)
-      if (data.output && data.output.length > 0) {
-        const imageUrl = data.output[0];
-
-        resultImage.src = imageUrl;
+      if (data.status === "succeeded") {
+        loader.classList.add("hidden");
+        resultImage.src = data.output[0];
         resultImage.classList.remove("hidden");
-
-        downloadBtn.href = imageUrl;
+        downloadBtn.href = data.output[0];
         downloadBtn.classList.remove("hidden");
-      } else {
-        console.error("Invalid response:", data);
+      } else if (data.status === "failed") {
+        loader.classList.add("hidden");
         alert("Image generation failed");
+      } else {
+        setTimeout(poll, 4000);
       }
-    } catch (error) {
-      console.error("Error:", error);
-      loader.classList.add("hidden");
-      alert("Something went wrong. Please try again.");
-    }
+    };
+
+    poll();
   };
 
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(fileInput.files[0]);
 });
