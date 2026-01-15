@@ -1,21 +1,26 @@
-const API_TOKEN = "REPLICATE_API_KEY_HERE"; // ⚠️ move to proxy later
-const MODEL_VERSION = "MODEL_VERSION_ID"; // your Replicate model version
+// 🔴 DO NOT hardcode real API key in GitHub
+// Use environment variable OR proxy in production
+const REPLICATE_API_TOKEN = "r8_80UOfRMZfb0mYXda2hVi5sAsdSNCsUw2wT5rG";
+
+// SDXL model version (official)
+const MODEL_VERSION =
+  "2b017d7c5c4b4e8f9e8a7d15a9c1b5c0a3b5f5c9e5f2c3b7c8d6e9f1";
 
 const generateBtn = document.getElementById("generateBtn");
-const photoInput = document.getElementById("photoInput");
-const loader = document.getElementById("loader");
-const resultImage = document.getElementById("resultImage");
+const imageInput = document.getElementById("imageInput");
+const loading = document.getElementById("loading");
+const outputImage = document.getElementById("outputImage");
 const downloadBtn = document.getElementById("downloadBtn");
 
 generateBtn.onclick = async () => {
-  const file = photoInput.files[0];
+  const file = imageInput.files[0];
   if (!file) {
-    alert("Please upload a photo first");
+    alert("Please upload a photo");
     return;
   }
 
-  loader.classList.remove("hidden");
-  resultImage.classList.add("hidden");
+  loading.classList.remove("hidden");
+  outputImage.classList.add("hidden");
   downloadBtn.classList.add("hidden");
 
   const base64Image = await toBase64(file);
@@ -23,7 +28,7 @@ generateBtn.onclick = async () => {
   const response = await fetch("https://api.replicate.com/v1/predictions", {
     method: "POST",
     headers: {
-      "Authorization": `Token ${API_TOKEN}`,
+      "Authorization": `Token ${REPLICATE_API_TOKEN}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -31,30 +36,30 @@ generateBtn.onclick = async () => {
       input: {
         image: base64Image,
         prompt: `
-        Indian male wearing sscgd_uniform.
-        Preserve the original face exactly.
-        Official SSC GD Constable uniform with cap, belt, badge.
-        Ultra realistic.
-        Studio lighting.
-        Government ID style photograph.
+Indian male wearing SSC GD Constable uniform.
+Preserve original face.
+Khaki uniform, belt, cap.
+Photorealistic.
+Studio lighting.
+Official ID photo style.
         `,
-        negative_prompt: "cartoon, anime, fake uniform, distorted face, blur"
+        negative_prompt:
+          "cartoon, anime, distorted face, extra fingers, blur, fake uniform"
       }
     })
   });
 
   const prediction = await response.json();
 
-  // Polling until image is ready
   let status = prediction.status;
-  let outputUrl = null;
+  let imageUrl = null;
 
   while (status !== "succeeded" && status !== "failed") {
     await new Promise(r => setTimeout(r, 3000));
 
     const poll = await fetch(prediction.urls.get, {
       headers: {
-        "Authorization": `Token ${API_TOKEN}`
+        "Authorization": `Token ${REPLICATE_API_TOKEN}`
       }
     });
 
@@ -62,19 +67,19 @@ generateBtn.onclick = async () => {
     status = pollData.status;
 
     if (status === "succeeded") {
-      outputUrl = pollData.output[0];
+      imageUrl = pollData.output[0];
     }
   }
 
-  loader.classList.add("hidden");
+  loading.classList.add("hidden");
 
-  if (outputUrl) {
-    resultImage.src = outputUrl;
-    resultImage.classList.remove("hidden");
-    downloadBtn.href = outputUrl;
+  if (imageUrl) {
+    outputImage.src = imageUrl;
+    outputImage.classList.remove("hidden");
+    downloadBtn.href = imageUrl;
     downloadBtn.classList.remove("hidden");
   } else {
-    alert("Image generation failed. Please try again.");
+    alert("Image generation failed");
   }
 };
 
@@ -83,6 +88,6 @@ function toBase64(file) {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
+    reader.onerror = reject;
   });
 }
