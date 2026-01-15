@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SSC GD Uniform Photo Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <h1>See Yourself as an SSC GD Constable</h1>
+    <p class="subtitle">
+      Upload your photo and generate an AI-powered SSC GD uniform image.
+      <br>For motivation only.
+    </p>
+
+    <input type="file" id="photoInput" accept="image/*" />
+    <button id="generateBtn">Generate My Uniform Photo</button>
+
+    <div id="loader" class="hidden">Generating image… Please wait</div>
+
+    <img id="resultImage" class="hidden" />
+    <a id="downloadBtn" class="hidden" download="ssc-gd-uniform.png">Download Image</a>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
